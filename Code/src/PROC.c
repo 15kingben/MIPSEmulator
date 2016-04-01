@@ -78,25 +78,25 @@ int main(int argc, char * argv[]) {
                 RegFile[rd] = RegFile[rt] << shamt;
                 break;
               case 2: //10 srl
-                RegFile[rd] = RegFile[rt] >> shamt;
+                RegFile[rd] = (int32_t)(((uint32_t)RegFile[rt]) >> shamt);
                 break;
               case 3: //11 sra
-                RegFile[rd] = RegFile[rt] << shamt;
+                RegFile[rd] = RegFile[rt] >> shamt;
                 break;
               case 4: //100 sllv
                 RegFile[rd] = RegFile[rt] << RegFile[rs];
                 break;
               case 6: //110 srlv
-                RegFile[rd] = RegFile[rt] >> RegFile[rs];
+                RegFile[rd] = (int32_t)(((uint32_t)RegFile[rt]) >> RegFile[rs]);
                 break;
               case 7: //111 srav
-                RegFile[rd] = RegFile[rt] << RegFile[rs];
+                RegFile[rd] = RegFile[rt] >> RegFile[rs];
                 break;
               case 32: //100000 add
                 RegFile[rd] = RegFile[rs] + RegFile[rt];
                 break;
               case 33: //100001 addu
-                RegFile[rd] = RegFile[rs] + RegFile[rt];
+                RegFile[rd] = (int32_t)((uint32_t)RegFile[rs] + (uint32_t)RegFile[rt]);
                 break;
               case 12: //1100: syscall
                 SyscallExe(RegFile[2]);
@@ -118,11 +118,11 @@ int main(int argc, char * argv[]) {
                 RegFile[rd] = RegFile[rs]-RegFile[rt];
                 break;
               case 35: //100011 subu
-                RegFile[rd]= RegFile[rs]-RegFile[rt];
+                RegFile[rd]= (int32_t)((uint32_t)RegFile[rs]-(uint32_t)RegFile[rt]);
                 break;
               case 24: // 11000 mult
               {
-                uint64_t result = ((uint64_t)RegFile[rs]) * ((uint64_t) RegFile[rt]);
+                uint64_t result = ((int64_t)RegFile[rs]) * ((int64_t) RegFile[rt]);
                 uint64_t half = 4294967296-1;
                 *LO = result & half;
                 *HI = result & (half << 32);
@@ -130,7 +130,7 @@ int main(int argc, char * argv[]) {
               }
               case 25: // 11001 multu
               {
-                uint64_t result = ((uint64_t)RegFile[rs]) * ((uint64_t) RegFile[rt]);
+                uint64_t result = ((int64_t) ((uint32_t)RegFile[rs])) * ((int64_t) ((uint32_t)RegFile[rt]));
                 uint64_t half = 4294967296-1;
                 *LO = result & half;
                 *HI = result & (half << 32);
@@ -141,8 +141,8 @@ int main(int argc, char * argv[]) {
                 *HI = RegFile[rs] % RegFile[rt];
                 break;
               case 27: //11011 divu
-                *LO = RegFile[rs] / RegFile[rt];
-                *HI = RegFile[rs] % RegFile[rt];
+                *LO = ((uint32_t)RegFile[rs]) / ((uint32_t)RegFile[rt]);
+                *HI = ((uint32_t)RegFile[rs]) % ((uint32_t)RegFile[rt]);
                 break;
               case 38: //100110 xor
                 RegFile[rd] = RegFile[rs] ^ RegFile[rt];
@@ -160,7 +160,7 @@ int main(int argc, char * argv[]) {
                 RegFile[rd] = (RegFile[rs] < RegFile[rt]);
                 break;
               case 45: //101011 sltu
-                RegFile[rd] = (RegFile[rs] < RegFile[rt]);
+                RegFile[rd] = ((uint32_t)RegFile[rs] < (uint32_t)RegFile[rt]);
                 break;
               }
            break;
@@ -168,13 +168,13 @@ int main(int argc, char * argv[]) {
               RegFile[rt] = RegFile[rs] + imm;
               break;
           case 9: //1001 addiu
-             RegFile[rt] = RegFile[rs] + imm;
+             RegFile[rt] = (uint32_t) RegFile[rs] + imm;
              break;
           case 10: //1010 slti
             RegFile[rt] = (RegFile[rs] < imm);
             break;
           case 11: //1011 sltui
-            RegFile[rt] = (RegFile[rs] < imm);
+            RegFile[rt] = ((uint32_t)RegFile[rs] < (uint32_t)imm);
             break;
           case 12: //1100 andi
               RegFile[rt] = RegFile[rs] & (imm);
@@ -182,7 +182,7 @@ int main(int argc, char * argv[]) {
           case 13: //1101 ori
               RegFile[rt] = RegFile[rs] | (imm);
           case 14: //1110 xori
-              RegFile[rt] = RegFiles[rs]^(imm);
+              RegFile[rt] = RegFile[rs]^(imm);
               break;
 
         }
