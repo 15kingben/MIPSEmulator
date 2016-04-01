@@ -59,7 +59,7 @@ void writefPointer(char const *fName, uint32_t *fAddr,struct Exe_Format  *exForm
 */
     printf(" NOT NEEDED ");
     }
-} 
+}
 
 struct fpointer * findfPointer(char const * fName, struct Exe_Format *exFormat,bool DEBUG) {
      struct fpointer *m;
@@ -102,7 +102,7 @@ void writeByte(uint32_t ADDR, uint8_t DATA,bool DEBUG) {
         HASH_REPLACE_INT(MAIN_MEMORY,addr ,m,dump);
         free(dump);
     }
-} 
+}
 
 uint8_t readByte(uint32_t ADDR,bool DEBUG) {
 
@@ -114,7 +114,7 @@ uint8_t readByte(uint32_t ADDR,bool DEBUG) {
     if(DEBUG) printf("READ : Address = %x Data = %x \n",ADDR,temp);
     return temp;
 
-} 
+}
 
 //add function to retrive all keys and de-allocate
 
@@ -134,7 +134,7 @@ void writeWord(uint32_t ADDR, uint32_t DATA,bool DEBUG1) {
 
 }
 
-uint32_t readWord(uint32_t ADDR,bool DEBUG) {
+uint32_t readWord(uint32_t ADDR, bool DEBUG) {
     uint32_t temp;
     bool DEBUG1 = false;
     temp = readByte(ADDR + 0,DEBUG1);
@@ -291,7 +291,7 @@ int parse_elf(const char * elf_data, size_t elf_length,struct Exe_Format * exeFo
     //printf("Virtual entry point for binary  = %x \n",exeFormat->entryAddr);
     //printf("Number of readable Segments = %d \n",numSegments);
     //printf("Program header entry size = %d (bytes) \n\n",bswap_16(ehdr->e_phentsize));
-    
+
     //Evaluate Program headers to extract segment information.
     Elf32_External_Phdr *phdr = (Elf32_External_Phdr *) (elf_data + bswap_32(ehdr->e_phoff));
 
@@ -312,7 +312,7 @@ int parse_elf(const char * elf_data, size_t elf_length,struct Exe_Format * exeFo
                         exeFormat->segmentList[exeFormat->numSegments].startAddress = bswap_32(phdr->p_vaddr);
                         exeFormat->segmentList[exeFormat->numSegments].lengthInFile = bswap_32(phdr->p_filesz);
                         exeFormat->segmentList[exeFormat->numSegments].sizeInMemory = bswap_32(phdr->p_memsz);
-                        exeFormat->segmentList[exeFormat->numSegments].protFlags    = bswap_16(phdr->p_flags);   
+                        exeFormat->segmentList[exeFormat->numSegments].protFlags    = bswap_16(phdr->p_flags);
                         //printf(" Segment type = %x \n",seg_type);
                         //printf(" Segment offset = %x \n",offset);
                         //printf(" Segment virtual address = %x \n",bswap_32(phdr->p_vaddr));
@@ -404,8 +404,8 @@ temp1 = "_ZN9__gnu_cxx12__atomic_addEPVii";       writefPointer(temp1, &syscalls
             Elf32_External_Sym *sym_base = (Elf32_External_Sym*)(elf_data + bswap_32(symtabhdr->sh_offset));
             uint32_t sym_count = bswap_32(symtabhdr->sh_size) / bswap_32(symtabhdr->sh_entsize);
             const char *str_base = (elf_data + bswap_32(strtabhdr->sh_offset));
-            char const *name; 
-            uint32_t faddr; 
+            char const *name;
+            uint32_t faddr;
             for(i = 0; i < sym_count; i++) {
                 if (ELF_ST_TYPE(sym_base[i].st_info) == STT_FUNC) {
                     name = (char *)(str_base + bswap_32(sym_base[i].st_name));
@@ -415,7 +415,7 @@ temp1 = "_ZN9__gnu_cxx12__atomic_addEPVii";       writefPointer(temp1, &syscalls
                     if( status != NULL ) {
                      //printf(" MUST WRITE = %x ",*status->faddr);
                      //printf(" with = %x \n", faddr);
-                     *status->faddr = faddr; 
+                     *status->faddr = faddr;
 
 
                      }
@@ -481,7 +481,7 @@ int LoadOSMemory(const char * file_name) {
                 }
         //printf("maxAddr = %x \n",maxAddr);
         exeFormat.maxUsedAddr = maxAddr - 1;
-        }  
+        }
         //store exec offsets -----------------------
         exec.GPC_START = exeFormat.entryAddr;
 
@@ -493,7 +493,7 @@ int LoadOSMemory(const char * file_name) {
         exec.GSP = 0xf7021fc0;//for noio
         exec.GRA = 0x1006a244;//for noio, but we don't really need it
         exec.GP = exeFormat.globalPointer;
- 
+
         fill_syscall_redirects();
         munmap(elf_data, file_stat.st_size);
         close(elf_fd);
@@ -507,4 +507,3 @@ void CleanUp() {
    HASH_ITER(hh,MAIN_MEMORY, s, tmp) { free(s); }
    printf("Clean Up Complete \n");
 }
-

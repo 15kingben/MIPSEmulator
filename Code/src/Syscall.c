@@ -27,22 +27,22 @@ FILE *stderrF;
 void initFDT(){
     char *s;
     //1 - open 0 - closed
-    s = "stdin"; 
+    s = "stdin";
     FDT_filename[FileDescriptorIndex] = s;
-    FDT_state[FileDescriptorIndex]    = 0;  
-    FileDescriptorIndex++;	
+    FDT_state[FileDescriptorIndex]    = 0;
+    FileDescriptorIndex++;
 
-    s = "stdout";  
+    s = "stdout";
     FDT_filename[FileDescriptorIndex] = s;
-    FDT_state[FileDescriptorIndex] = 0;   
-    FileDescriptorIndex++;	
+    FDT_state[FileDescriptorIndex] = 0;
+    FileDescriptorIndex++;
 
-    s = "stderr";  
+    s = "stderr";
     FDT_filename[FileDescriptorIndex] = s;
-    FDT_state[FileDescriptorIndex] = 0;   
-    FileDescriptorIndex++;	
-    
-    
+    FDT_state[FileDescriptorIndex] = 0;
+    FileDescriptorIndex++;
+
+
     stdoutF = fopen("stdout.txt","w");
     stderrF = fopen("stderr.txt","w");
 
@@ -56,8 +56,8 @@ fclose(stderrF);
 
 }
 
-
-inline int hexCharValue(const char ch){
+//inline
+int hexCharValue(const char ch){
   if (ch>='0' && ch<='9')return ch-'0';
   if (ch>='a' && ch<='f')return ch-'a'+10;
   return 0;
@@ -122,13 +122,13 @@ void fxstat64(int sp)
 }
 
 
-//Syscall Handler 
+//Syscall Handler
 void SyscallExe(uint32_t SID) {
      printf("Syscall %d Execution \n",SID);
 
     switch(SID) {
     case 4246 :
-    case 4001:{ printf(" ----- Execution Complete -----  \n"); 
+    case 4001:{ printf(" ----- Execution Complete -----  \n");
                 printf("Program Exiting ");
                 syscall(SYS_exit, RegFile[4]);
                 break;}
@@ -136,27 +136,27 @@ void SyscallExe(uint32_t SID) {
                 printf("Uninplemented \n");
                break;}
 	case 4004:{			//write
-            printf("SYSCALL Write File \n"); 
+            printf("SYSCALL Write File \n");
             printf("File Descriptor Index =  %d",RegFile[4]);
             unsigned int k=RegFile[5];						//start at specified element
             unsigned int length=RegFile[6];
             int i = k;
             if (RegFile[4]!=1 && RegFile[4]!=2) {
-         
+
             	FILE *_file;
             	_file = fopen(FDT_filename[RegFile[4]],"a+" );
             	while (length != 0) {
-            		length--; 
+            		length--;
                         fprintf(_file,"%c",(char)readByte(i,false));
             		i++;
             	}
                 fflush(_file);
             	fclose(_file);
-            
+
             }
             else {
             	while (readByte(i,false)!=00) {
-            	length--; 
+            	length--;
                 printf("%c",readByte(i,false));
             		if(RegFile[4]==1) {
             			fprintf(stdoutF,"%c", readByte(i,false));
@@ -170,14 +170,14 @@ void SyscallExe(uint32_t SID) {
             	fflush(stdoutF);
             	} else {
             	fflush(stderrF);
-            	} 
+            	}
             	}
             i++;
             RegFile[2] = i-k-1;
             break;}
 
 
-    case 4007:{ printf("SYSCALL Write Number to  File \n"); 
+    case 4007:{ printf("SYSCALL Write Number to  File \n");
                 printf("File Descriptor Index =  1");
                 fprintf(stdoutF,"%d", RegFile[4]);
             	fflush(stdoutF);
@@ -213,11 +213,11 @@ void SyscallExe(uint32_t SID) {
                RegFile[2] = FileDescriptorIndex;
 
                FILE *_file;
-               _file = fopen(fName,"w+");    
+               _file = fopen(fName,"w+");
                fclose(_file);
                FDT_filename[FileDescriptorIndex] = fName;
-               FDT_state[FileDescriptorIndex]    = 1;  
-               FileDescriptorIndex++;	
+               FDT_state[FileDescriptorIndex]    = 1;
+               FileDescriptorIndex++;
                break;}
   case 4006:{printf("SYSCALL File Close \n");
              printf("File Descriptor Index =  %d",RegFile[4]);
@@ -225,7 +225,7 @@ void SyscallExe(uint32_t SID) {
              RegFile[2] = 0 ;
              break;}  //close file
 
- 
+
   case 4020:{printf("SYSCALL Getpid \n");
              RegFile[2] = syscall(SYS_getpid);
              break;}
@@ -233,7 +233,7 @@ void SyscallExe(uint32_t SID) {
                      RegFile[2] = syscall(SYS_getuid);
                      break;}
 
-  case 4028:{printf("SYSCALL FStat \n");										
+  case 4028:{printf("SYSCALL FStat \n");
              RegFile[4] = RegFile[5];
              RegFile[5] = RegFile[6];
              struct stat buf;
@@ -248,13 +248,13 @@ void SyscallExe(uint32_t SID) {
                RegFile[2] = syscall(SYS_geteuid);
                printf(" EUID = %x \n",RegFile[2]);
                break;
-              }                                  
+              }
   case 4050:{printf("SYSCALL Getegid\n");
              RegFile[2] = syscall(SYS_getegid);break;}
   case 4064:{printf("Getppid at time:\n");
              RegFile[2] = syscall(SYS_getppid);break;}
   case 4065:{printf("Getpgrp at time:\n");
-             RegFile[2] = syscall(SYS_getpgrp);break;} 
+             RegFile[2] = syscall(SYS_getpgrp);break;}
   case 4076:{printf("Getrlimit at time:\n");
              RegFile[2] = syscall(SYS_getrlimit);break;}
   case 4077:{printf("Getrusage at time:\n");
@@ -289,7 +289,3 @@ void SyscallExe(uint32_t SID) {
 }//switch(SID)
 
 }//SyscallExe
-                                           
-
-
-
