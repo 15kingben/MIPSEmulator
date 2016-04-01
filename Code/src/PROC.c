@@ -69,7 +69,10 @@ int main(int argc, char * argv[]) {
         int32_t *LO = &RegFile[33];
         int32_t jumpAdress = CurrentInstruction & 67108863;
 
-        //printf("%d", funcCode);
+        printf("OPCODE=%d\n", opCode);
+        printf("FUNC=%d\n", funcCode);
+        printf("ISJumping=%d\n", isJumping);
+
         switchCaseLabel:
 
         switch(opCode){
@@ -92,6 +95,19 @@ int main(int argc, char * argv[]) {
                 break;
               case 7: //111 srav
                 RegFile[rd] = RegFile[rt] >> RegFile[rs];
+                break;
+              case 8: //1000 jr
+                isJumping = true;
+                newPC = RegFile[rs];
+                PC+=4;
+                goto switchCaseLabel;
+                break;
+              case 9: //1001 jalr
+                isJumping = true;
+                newPC = RegFile[rs];
+                RegFile[rd] = PC + 8;
+                PC+=4;
+                goto switchCaseLabel;
                 break;
               case 32: //100000 add
                 RegFile[rd] = RegFile[rs] + RegFile[rt];
@@ -189,6 +205,9 @@ int main(int argc, char * argv[]) {
           case 15: //1111 lui
             RegFile[rt] = (int32_t)((imm) << 16);
             break;
+
+
+          //LOADS AND STORES
           case 32: // 100000 lb
               {
               int32_t byte = (int32_t) readByte(RegFile[rd] + imm, false);
@@ -266,16 +285,191 @@ int main(int argc, char * argv[]) {
             writeByte(RegFile[rd] + imm - 8, (RegFile[rt] & (255 << 8)) >> 8, false);
             writeByte(RegFile[rd] + imm, RegFile[rt] & 255, false);
             break;}
+
+          //JUMPS
           case 2: // 10 j
             isJumping = true;
             newPC = (jumpAdress << 2) | ((PC + 4) & (4 << 28));
+            PC+=4;
             goto switchCaseLabel;
             break;
           case 3: // 11 jal
             isJumping = true;
             newPC = (jumpAdress << 2) | ((PC + 4) & (4 << 28));
             RegFile[31] = PC + 8;
+            PC+=4;
             goto switchCaseLabel;
+            break;
+
+          //BRANCHES
+          case 4: //100 beq
+            {isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] == RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            PC+=4;
+            break;
+            }
+
+          case 5: //101 bne
+            {isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] != RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            PC+=4;
+            break;
+            }
+
+          case 6: //110 blez
+            {isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] <= RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            PC+=4;
+            break;
+            }
+
+          case 7: //111 bgtz
+            {isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] > RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            break;
+            }
+
+
+          case 20://10100 beql
+            {
+            isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] == RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            PC+=4;
+            break;
+            }
+
+          case 21://10101 bnel
+            {
+            isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] != RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            PC+=4;
+            break;
+            }
+
+          case 22://10110 blezl
+            {
+            isJumping = true;
+            int32_t offset = (int32_t) imm;
+            offset = (offset << 16) >> 14;
+
+            if(RegFile[rs] <= RegFile[rt]){
+              newPC = (PC + 4) + offset;
+            }else{
+              newPC = PC + 8;
+            }
+            PC+=4;
+            break;
+            }
+
+
+          case 1:
+            switch(rs){
+              case 0:
+                {
+                isJumping = true;
+                int32_t offset = (int32_t) imm;
+                offset = (offset << 16) >> 14;
+
+                if(RegFile[rs] < RegFile[rt]){
+                  newPC = (PC + 4) + offset;
+                }else{
+                  newPC = PC + 8;
+                }
+                PC+=4;
+                break;
+                }
+
+              case 1:
+                {
+                isJumping = true;
+                int32_t offset = (int32_t) imm;
+                offset = (offset << 16) >> 14;
+
+                if(RegFile[rs] >= RegFile[rt]){
+                  newPC = (PC + 4) + offset;
+                }else{
+                  newPC = PC + 8;
+                }
+                PC+=4;
+                break;
+                }
+
+
+              case 16:
+                {
+                isJumping = true;
+                int32_t offset = (int32_t) imm;
+                offset = (offset << 16) >> 14;
+
+                if(RegFile[rs] < RegFile[rt]){
+                  newPC = (PC + 4) + offset;
+                }else{
+                  newPC = PC + 8;
+                }
+                RegFile[31] = PC + 8;
+                PC+=4;
+                break;
+                }
+
+              case 17:
+                {
+                isJumping = true;
+                int32_t offset = (int32_t) imm;
+                offset = (offset << 16) >> 14;
+
+                if(RegFile[rs] >= RegFile[rt]){
+                  newPC = (PC + 4) + offset;
+                }else{
+                  newPC = PC + 8;
+                }
+                RegFile[31] = PC + 8;
+                PC+=4;
+                break;
+                }
+
+            }
             break;
 
         }
