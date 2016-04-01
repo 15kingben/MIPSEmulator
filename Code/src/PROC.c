@@ -27,6 +27,7 @@ int main(int argc, char * argv[]) {
     int MaxInst = 0;
     int status = 0;
     uint32_t i;
+    bool isJumping = false;
     uint32_t PC,newPC;
     uint32_t CurrentInstruction;
 
@@ -55,25 +56,25 @@ int main(int argc, char * argv[]) {
     for(i=0; i<MaxInst ; i++) {
         DynInstCount++;
         CurrentInstruction = readWord(PC,false);
-        printRegFile();
+        //printRegFile();
         uint32_t opCode = CurrentInstruction >> 26;
         uint32_t funcCode = CurrentInstruction & 63;
         uint32_t rs = 0 + ((CurrentInstruction & ( 31 << (32-11))) >> 21);
         uint32_t rt = (CurrentInstruction & ( 31 << (32-16))) >> 16;
         uint32_t rd = (CurrentInstruction & ( 31 << (32-21))) >> 11 ;
         uint32_t shamt = (CurrentInstruction & ( 31 << (32-26))) >> 6;
-        uint32_t imm = CurrentInstruction & ( 65536 - 1);
+        int32_t imm = ((CurrentInstruction & ( 65536 - 1)) << 16) >> 16;
         uint32_t target = CurrentInstruction & (67108864 - 1);
         int32_t *HI = &RegFile[32];
         int32_t *LO = &RegFile[33];
+        int32_t jumpAdress = CurrentInstruction & 67108863;
 
-        printf("%d", funcCode);
+        //printf("%d", funcCode);
+        switchCaseLabel:
 
         switch(opCode){
-          printf("OP=%d\n", opCode);
           case 0:  //Special = 0
             switch(funcCode){
-             printf("FUNC=%d\n", funcCode);
               case 0: //0 sll
                 RegFile[rd] = RegFile[rt] << shamt;
                 break;
@@ -174,20 +175,118 @@ int main(int argc, char * argv[]) {
             RegFile[rt] = (RegFile[rs] < imm);
             break;
           case 11: //1011 sltui
-            RegFile[rt] = ((uint32_t)RegFile[rs] < (uint32_t)imm);
+            RegFile[rt] = ((uint32_t)RegFile[rs] < (uint32_t) imm);
             break;
           case 12: //1100 andi
               RegFile[rt] = RegFile[rs] & (imm);
               break;
           case 13: //1101 ori
               RegFile[rt] = RegFile[rs] | (imm);
+              break;
           case 14: //1110 xori
               RegFile[rt] = RegFile[rs]^(imm);
               break;
+          case 15: //1111 lui
+            RegFile[rt] = (int32_t)((imm) << 16);
+            break;
+          case 32: // 100000 lb
+              {
+              int32_t byte = (int32_t) readByte(RegFile[rd] + imm, false);
+              byte = (byte << (24)) >> 24; //sign extension
+              RegFile[rt] = byte;
+              break;
+              }
+          case 33: // 100001 lh
+            {
+            int32_t halfWord = (int32_t) readWord(RegFile[rd] + imm, false);
+            halfWord = halfWord & (65535 << 16); // half word
+            halfWord = (halfWord) >> 16; //sign extension
+            RegFile[rt] = halfWord;
+            break;
+            }
+          case 34: // 100010 lwl
+            {
+            uint32_t halfWord = (uint32_t) readWord(RegFile[rd] + imm, false);
+            halfWord = halfWord & (65535 << 16); // half word
+            RegFile[rt] = RegFile[rt] | halfWord;
+            break;
+            }
+
+          case 35: // 100011 lw
+            {
+            int32_t word = (int32_t) readWord(RegFile[rd] + imm, false);
+            RegFile[rt] = word;
+            break;
+            }
+
+          case 36: // 100100  lbu
+            {
+            int32_t byte = (int32_t) readByte(RegFile[rd] + imm, false);
+            RegFile[rt] = byte;
+            break;
+            }
+          case 37: // 100101 lhu
+            {
+            uint32_t halfWord = (uint32_t) readWord(RegFile[rd] + imm, false);
+            halfWord = halfWord & (65535 << 16); // half word
+            halfWord = (halfWord) >> 16; //no sign extension
+            RegFile[rt] = (int32_t)halfWord;
+            break;
+          }
+          case 38: //100110 lwr
+
+            {
+            uint32_t halfWord = (uint32_t) readWord(RegFile[rd] + imm - 8, false);
+            halfWord = (halfWord & (65535 << 16)) >> 16; // shift to right half dont sign extend
+            RegFile[rt] = RegFile[rt] | halfWord;
+            break;
+            }
+          case 40: //101000 sb
+            {
+            writeByte(RegFile[rd] + imm, RegFile[rt] & 255, false);
+            break;
+            }
+          case 41: //101001 sh
+            {writeByte(RegFile[rd] + imm, (RegFile[rt] & (255 << 8)) >> 8, false);
+            writeByte(RegFile[rd] + imm + 8, RegFile[rt] & 255, false);
+            break;}
+          case 42: //101010 swl
+            {uint32_t halfWord = (uint32_t) RegFile[rt];
+            halfWord = halfWord & (65535 << 16); // half word
+            writeByte(RegFile[rd] + imm, (RegFile[rt] & (255 << 8)) >> 8, false);
+            writeByte(RegFile[rd] + imm + 8, RegFile[rt] & 255, false);
+            break;}
+          case 43: //101011 sw
+            {writeWord(RegFile[rd] + imm, RegFile[rt], false);
+            break;}
+          case 46: //101110 swr
+            {
+            uint32_t halfWord = (uint32_t) RegFile[rt];
+            halfWord = halfWord & (65535); // half word
+            writeByte(RegFile[rd] + imm - 8, (RegFile[rt] & (255 << 8)) >> 8, false);
+            writeByte(RegFile[rd] + imm, RegFile[rt] & 255, false);
+            break;}
+          case 2: // 10 j
+            isJumping = true;
+            newPC = (jumpAdress << 2) | ((PC + 4) & (4 << 28));
+            goto switchCaseLabel;
+            break;
+          case 3: // 11 jal
+            isJumping = true;
+            newPC = (jumpAdress << 2) | ((PC + 4) & (4 << 28));
+            RegFile[31] = PC + 8;
+            goto switchCaseLabel;
+            break;
 
         }
 
-        PC += 4;//will be changed
+        if(isJumping){
+          PC = newPC;
+          isJumping = false;
+        }else{
+          PC += 4;//will be changed
+        }
+
     /********************************/
     //Add your implementation here
     /********************************/
