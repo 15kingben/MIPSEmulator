@@ -54,6 +54,8 @@ int main(int argc, char * argv[]) {
     printf("Max Instruction to run = %d \n",MaxInst);
     PC = exec.GPC_START;
     for(i=0; i<MaxInst ; i++) {
+        switchCaseLabel:
+
         DynInstCount++;
         CurrentInstruction = readWord(PC,false);
         //printRegFile();
@@ -69,11 +71,10 @@ int main(int argc, char * argv[]) {
         int32_t *LO = &RegFile[33];
         int32_t jumpAdress = CurrentInstruction & 67108863;
 
-        printf("OPCODE=%d\n", opCode);
-        printf("FUNC=%d\n", funcCode);
-        printf("ISJumping=%d\n", isJumping);
+        //printf("OPCODE=%d\n", opCode);
+        //printf("FUNC=%d\n", funcCode);
+        //printf("ISJumping=%d\n", isJumping);
 
-        switchCaseLabel:
 
         switch(opCode){
           case 0:  //Special = 0
