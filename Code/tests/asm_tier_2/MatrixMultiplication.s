@@ -58,6 +58,9 @@ CROSS:
 	nop
 # store result in proper memory location
 	sw	$t3,($t7)
+	add   $v0,$zero,4007
+	add   $a0,$zero,$t3
+	syscall	
 	addiu	$t7,$t7,4
 # loop stuff
 	addiu	$t1,$t1,1
@@ -68,5 +71,5 @@ CROSS:
 	bne	$t0,$s0,CROW
 	nop
 # exit
-	li	$v0,0xFA1
+	li	$v0,4001
 	syscall

@@ -1,7 +1,7 @@
 .data
 length: .word 10
 nums: .word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-target: .word 11
+target: .word 7
 notfound: .asciiz "Target not found"
 .text 
 
@@ -30,11 +30,11 @@ WHILE: blt	$s2,$s1,NOTFOUND
 	
 	bne	$t1,$s4,S1
 	nop
-	li	$v0,1
 	xor	$a0,$t0,$zero
+        li      $v0,0xFA7             #syscall int out to file out              
 	syscall
 # exit
-	li	$v0,10
+	li	$v0, 0XFA1
 	syscall	
 # if it is greater
 S1:	blt	$t1,$s4,S2
@@ -47,8 +47,10 @@ S2:	addiu	$s1,$t0,1
 	j	WHILE
 	nop
 NOTFOUND:
-	li	$v0, 4
-	la	$a0, notfound
+        li      $v0,0xFA4             #syscall file out              
+	li	$a0, 1                #Use stdout
+	la	$a1, notfound         #string address
+	li      $a2, 18               #Length of output
 	syscall
 	li	$v0,0xFA1
 	syscall
