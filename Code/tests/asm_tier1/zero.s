@@ -62,4 +62,3 @@ nop
 li $1, 0xdeadbeef
 mthi $1
 mfhi $0
-
