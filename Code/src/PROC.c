@@ -58,6 +58,8 @@ int main(int argc, char * argv[]) {
         switchCaseLabel:
         i++;
 
+
+
         DynInstCount++;
         CurrentInstruction = readWord(PC,false);
         printRegFile();
@@ -73,15 +75,18 @@ int main(int argc, char * argv[]) {
         int32_t *HI = &RegFile[32];
         int32_t *LO = &RegFile[33];
         int32_t jumpAdress = CurrentInstruction & 67108863;
+        uint32_t memAddress = (uint32_t)RegFile[rs] + imm;
 
         /*printf("IMM=%d\n", imm);
-        printf("OPCODE=%d\n", opCode);
+        */printf("OPCODE=%d\n", opCode);
         printf("FUNC=%d\n", funcCode);
         printf("ISJumping=%d\n", isJumping);
         if(isJumping){
           printf("newPC=%d\n", newPC);
         }
-        printf("PC=%d\n", PC);*/
+        printf("PC=%d\n", PC);
+        RegFile[0] = 0;
+
 
         //getchar();
         switch(opCode){
@@ -159,17 +164,17 @@ int main(int argc, char * argv[]) {
               {
                 uint64_t result = ((int64_t) ((uint32_t)RegFile[rs])) * ((int64_t) ((uint32_t)RegFile[rt]));
                 uint64_t half = 4294967296-1;
-                *LO = result & half;
-                *HI = result & (half << 32);
+                RegFile[33] = result & half;
+                RegFile[32] = result & (half << 32);
                 break;
               }
               case 26: //11010 div
-                *LO = RegFile[rs] / RegFile[rt];
-                *HI = RegFile[rs] % RegFile[rt];
+                RegFile[33] = RegFile[rs] / RegFile[rt];
+                RegFile[32] = RegFile[rs] % RegFile[rt];
                 break;
               case 27: //11011 divu
-                *LO = (RegFile[rs]) / (RegFile[rt]); //(uint32_t)
-                *HI = (RegFile[rs]) % (RegFile[rt]);
+                RegFile[33] = ((uint32_t)(RegFile[rs])) / (uint32_t)((RegFile[rt])); //(uint32_t)
+                RegFile[32] = ((uint32_t)(RegFile[rs])) % (uint32_t)((RegFile[rt]));
                 break;
               case 38: //100110 xor
                 RegFile[rd] = RegFile[rs] ^ RegFile[rt];
@@ -195,17 +200,17 @@ int main(int argc, char * argv[]) {
            break;
 
           case 8: //1000 addi
-              RegFile[rt] = RegFile[rs] + imm;
+              RegFile[rt] = memAddress;
               break;
           case 9: //1001 addiu
             //("ADDINGUNSIGNEDIMMEDIATE RT=%d RS=%d IMM=%d\n", RegFile[rt], RegFile[rs], imm);
-             RegFile[rt] =  RegFile[rs] + imm;//(uint32_t)
+             RegFile[rt] =  memAddress;//(uint32_t)
              break;
           case 10: //1010 slti
             RegFile[rt] = (RegFile[rs] < imm);
             break;
           case 11: //1011 sltui
-            RegFile[rt] = (RegFile[rs] < (uint32_t)imm); //(uint32_t)
+            RegFile[rt] = ((uint32_t)RegFile[rs] < (uint32_t)imm); //(uint32_t)
             break;
           case 12: //1100 andi
               {uint32_t andi = imm;
@@ -232,14 +237,14 @@ int main(int argc, char * argv[]) {
           //LOADS AND STORES
           case 32: // 100000 lb
               {
-              int32_t byte = (int32_t) readByte(RegFile[rs] + imm, true);
+              int32_t byte = (int32_t) readByte(memAddress, true);
               byte = (byte << (24)) >> 24; //sign extension
               RegFile[rt] = byte;
               break;
               }
           case 33: // 100001 lh
             {
-            int32_t halfWord = (int32_t) readWord(RegFile[rs] + imm, true);
+            int32_t halfWord = (int32_t) readWord(memAddress, true);
             halfWord = halfWord & (65535 << 16); // half word
             halfWord = (halfWord) >> 16; //sign extension
             RegFile[rt] = halfWord;
@@ -247,14 +252,14 @@ int main(int argc, char * argv[]) {
             }
           case 34: // 100010 lwl
             {
-              int32_t startByte = (RegFile[rs] + imm )%4;
-              int32_t diff = (RegFile[rs] + imm ) - startByte;
+              int32_t startByte = (memAddress ) - (memAddress )%4;
+              int32_t diff = (memAddress ) - startByte;
               uint32_t read = (uint32_t)readWord(startByte , true);
               read = (read << diff);
 
               RegFile[rt] = RegFile[rt] | read;
 
-            // uint32_t halfWord = (uint32_t) readWord(RegFile[rs] + imm, false);
+            // uint32_t halfWord = (uint32_t) readWord(memAddress, false);
             // halfWord = halfWord & (65535 << 16); // half word
             // RegFile[rt] = RegFile[rt] | halfWord;
             break;
@@ -262,20 +267,21 @@ int main(int argc, char * argv[]) {
 
           case 35: // 100011 lw
             {
-            int32_t word = (int32_t) readWord(RegFile[rs] + imm, true);
+            int32_t word = (int32_t) readWord(memAddress, true);
+            printf("REGNUMBER: %d Value: %d", rt, RegFile[rt]);
             RegFile[rt] = word;
             break;
             }
 
           case 36: // 100100  lbu
             {
-            int32_t byte = (uint32_t) readByte(RegFile[rs] + imm, true);
+            int32_t byte = (uint32_t) readByte(memAddress, true);
             RegFile[rt] = byte;
             break;
             }
           case 37: // 100101 lhu
             {
-            uint32_t halfWord = (uint32_t) readWord(RegFile[rs] + imm, true);
+            uint32_t halfWord = (uint32_t) readWord(memAddress, true);
             halfWord = halfWord & (65535 << 16); // half word
             halfWord = (halfWord) >> 16; //no sign extension
             RegFile[rt] = (int32_t)halfWord;
@@ -284,8 +290,8 @@ int main(int argc, char * argv[]) {
           case 38: //100110 lwr
 
             {
-              int32_t startByte = (RegFile[rs] + imm)%4;
-              int32_t diff = (RegFile[rs] + imm) - startByte + 1;
+              int32_t startByte = (memAddress) - (memAddress)%4;
+              int32_t diff = (memAddress) - startByte + 1;
               uint32_t read = (uint32_t)readWord(startByte , true);
 
               read = read >> (4-diff);
@@ -293,18 +299,18 @@ int main(int argc, char * argv[]) {
             }
           case 40: //101000 sb
             {
-            writeByte(RegFile[rs] + imm, RegFile[rt] & 255, true);
+            writeByte(memAddress, RegFile[rt] & 255, true);
             break;
             }
           case 41: //101001 sh
 
             {
-            writeByte(RegFile[rs] + imm, (RegFile[rt] & (255 << 8)) >> 8, true);
-            writeByte(RegFile[rs] + imm + 8, RegFile[rt] & 255, true);
+            writeByte(memAddress, (RegFile[rt] & (255 << 8)) >> 8, true);
+            writeByte(memAddress + 8, RegFile[rt] & 255, true);
             break;}
           case 42: //101010 swl
             {
-              int32_t effAddr = RegFile[rs] + imm;
+              int32_t effAddr = memAddress;
               int count = 0;
               for(int addr = effAddr; addr < (effAddr + 4) - ((effAddr + 4)%4); addr++){
                 writeByte(addr, (uint8_t) (RegFile[rt] >> 8*(3 - count)), true);
@@ -312,11 +318,11 @@ int main(int argc, char * argv[]) {
               }
             break;}
           case 43: //101011 sw
-            {writeWord(RegFile[rs] + imm, RegFile[rt], true);
+            {writeWord(memAddress, RegFile[rt], true);
             break;}
           case 46: //101110 swr
             {
-              int32_t effAddr = RegFile[rs] + imm;
+              int32_t effAddr = memAddress;
               int diff = effAddr - ((effAddr)%4);
               int count = 0;
               for(int addr = effAddr - ((effAddr)%4); addr <= effAddr; addr++){
@@ -361,6 +367,7 @@ int main(int argc, char * argv[]) {
             int32_t offset = imm;
             //offset = (offset << 16) >> 14;
             offset = offset << 2;
+            printf("RS: %d RT: %d RTREGNUMBER %d", RegFile[rs], RegFile[rt], rt);
             if(RegFile[rs] != RegFile[rt]){
               newPC = (PC+4) + offset;
             }else{
@@ -397,6 +404,7 @@ int main(int argc, char * argv[]) {
             }else{
               newPC = PC + 8;
             }
+            PC+=4;
             goto switchCaseLabel;
             break;
             }
